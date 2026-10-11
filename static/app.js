@@ -58,9 +58,20 @@ function colorExpression(property) {
       : [0, '#16392f', .45, '#60bd91', .65, '#e5b65a', 1, '#e47763'];
   return ['interpolate', ['linear'], ['get', property], ...stops];
 }
+const LAYER_META = {
+  flood_risk: { title: 'FLOOD RISK', scale: ['LOW', 'WATCH', 'HIGH'], gradient: 'linear-gradient(90deg,#55c99a,#edc45d,#e87864)' },
+  water_stress: { title: 'WATER STRESS', scale: ['LOW', 'MODERATE', 'HIGH'], gradient: 'linear-gradient(90deg,#153c32,#e7bd5e,#e47763)' },
+  recharge_potential: { title: 'RECHARGE POTENTIAL', scale: ['LOW', 'MODERATE', 'HIGH'], gradient: 'linear-gradient(90deg,#3d4438,#4dc89d,#74e3b5)' },
+};
 function setLayer(property) {
+  const meta = LAYER_META[property];
+  if (!meta) return;
+  $('map-legend-title').textContent = meta.title;
+  $('legend-gradient').style.background = meta.gradient;
+  $('legend-scale').innerHTML = meta.scale.map((label) => `<span>${label}</span>`).join('');
   if (!state.map || !state.map.getLayer('ward-fill')) return;
   state.map.setPaintProperty('ward-fill', 'fill-color', colorExpression(property));
+  state.map.setPaintProperty('ward-fill', 'fill-opacity', .58);
 }
 function initMap() {
   if (!window.maplibregl) { renderFallbackMap(); return; }
@@ -71,9 +82,10 @@ function initMap() {
       $('map').hidden = false; $('map-fallback').hidden = true; $('map-loading').hidden = true;
       state.map.fitBounds([[77.264, 28.376], [77.337, 28.426]], { padding: 34, maxZoom: 11.4, duration: 0 });
       state.map.addSource('wards', { type: 'geojson', data: state.wards || { type: 'FeatureCollection', features: [] } });
-      state.map.addLayer({ id: 'ward-fill', type: 'fill', source: 'wards', paint: { 'fill-color': colorExpression('flood_risk'), 'fill-opacity': .34 } });
-      state.map.addLayer({ id: 'ward-line', type: 'line', source: 'wards', paint: { 'line-color': '#65e2b5', 'line-width': 1, 'line-opacity': .8 } });
+      state.map.addLayer({ id: 'ward-fill', type: 'fill', source: 'wards', paint: { 'fill-color': colorExpression($('layer-select').value), 'fill-opacity': .58 } });
+      state.map.addLayer({ id: 'ward-line', type: 'line', source: 'wards', paint: { 'line-color': '#16624b', 'line-width': 1.4, 'line-opacity': .9 } });
       state.map.addLayer({ id: 'ward-label', type: 'symbol', source: 'wards', layout: { 'text-field': ['get', 'name'], 'text-size': 9, 'text-font': ['Open Sans Regular'], 'text-allow-overlap': false }, paint: { 'text-color': '#f0fff6', 'text-halo-color': '#0b1c16', 'text-halo-width': 1.3 } });
+      setLayer($('layer-select').value);
       state.map.addSource('sites', { type: 'geojson', data: state.sites || { type: 'FeatureCollection', features: [] } });
       state.map.addLayer({ id: 'site-circles', type: 'circle', source: 'sites', paint: { 'circle-radius': 4, 'circle-color': ['match', ['get', 'type'], 'outfall', '#e9b958', '#58e0b1'], 'circle-stroke-color': '#092017', 'circle-stroke-width': 1.2 } });
       state.map.on('click', 'ward-fill', (event) => { const p = event.features?.[0]?.properties; if (p) toast(`${p.name} · ${Number(p.water_stress).toFixed(1)}% stress · synthetic data`); });
@@ -91,9 +103,17 @@ function renderFallbackMap() {
   $('map-loading').hidden = true;
   const container = $('map-fallback'); container.hidden = false;
   if (!state.wards?.features) { container.textContent = 'Loading synthetic catchment map…'; return; }
+  const property = $('layer-select').value;
+  const fallbackColor = (feature) => {
+    const value = Number(feature.properties[property] || 0);
+    if (property === 'water_stress') return value < 55 ? '#55c99a' : value < 78 ? '#e7bd5e' : '#e47763';
+    if (property === 'recharge_potential') return value < .35 ? '#88917a' : value < .65 ? '#67b982' : '#29b98a';
+    return value < .45 ? '#55c99a' : value < .65 ? '#e7bd5e' : '#e47763';
+  };
   container.innerHTML = state.wards.features.map((f, i) => {
     const x = 4 + (i % 5) * 18.5, y = 8 + Math.floor(i / 5) * 21;
-    return `<span class="fallback-ward" style="left:${x}%;top:${y}%;width:17%;height:19%">${f.properties.name}</span>`;
+    const color = fallbackColor(f);
+    return `<span class="fallback-ward" style="left:${x}%;top:${y}%;width:17%;height:19%;border-color:${color};background:${color}55">${f.properties.name}</span>`;
   }).join('');
 }
 function renderRoutes(result) {
@@ -182,7 +202,7 @@ function setView(view) {
   setTimeout(() => state.map?.resize(), 50);
 }
 $('rain-slider').addEventListener('input', (event) => { $('rain-readout').textContent = event.target.value; $('rain-label').textContent = event.target.value; });
-$('layer-select').addEventListener('change', (event) => setLayer(event.target.value));
+ $('layer-select').addEventListener('change', (event) => { setLayer(event.target.value); if (!$('map-fallback').hidden) renderFallbackMap(); });
 $('apply-scenario').addEventListener('click', applyScenario);
 $('optimize-button').addEventListener('click', optimizeRoutes);
 $('solve-button').addEventListener('click', optimizeRoutes);
