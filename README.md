@@ -30,4 +30,4 @@ The map is rendered with MapLibre GL JS using OpenFreeMap's public `positron` st
 
 ## Deployment
 
-The production container uses `Dockerfile`, listens on `0.0.0.0:$PORT` (default `3000`), and serves static assets, API routes, `/manus-routes.json`, and `/_jalsetu/health` from one origin. Managed WebDev is used for the durable site; this conversion does not create AWS resources or enable a database. A stable public URL is valid only after the platform reports successful publication.
+The production container uses `Dockerfile`, listens on `0.0.0.0:$PORT` (default `3000`), and serves static assets, API routes, `/manus-routes.json`, and `/_jalsetu/health` from one origin. The live managed WebDev site is [jalsetu-nbk8dbqi.manus.space](https://jalsetu-nbk8dbqi.manus.space), published from checkpoint `e724854`. Hosting is currently On-Demand: the URL is stable, but the app may sleep after inactivity and cold-start on a later visit. This conversion did not create AWS resources or enable a database.
