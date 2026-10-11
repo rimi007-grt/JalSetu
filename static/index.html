@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07120f">
+  <meta name="description" content="Jal-Setu — simulated Faridabad water resilience command centre.">
+  <title>Jal-Setu · Water Resilience Command</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://tiles.openfreemap.org">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" rel="stylesheet">
+  <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Jal-Setu Command home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 3.8 26 9.5v13L16 28.2 6 22.5v-13z"/><path d="M9.3 14.1c2.1-2 4.2 2 6.7 0s4.6 2 6.7 0M9.3 18.4c2.1-2 4.2 2 6.7 0s4.6 2 6.7 0"/></svg></span>
+        <span class="brand-copy"><strong>JAL-SETU</strong><small>WATER RESILIENCE GRID</small></span>
+      </a>
+      <div class="location-chip"><span class="pulse-dot"></span> FARIDABAD <span class="slash">/</span> HR</div>
+      <div class="top-status"><span class="status-led"></span> SYSTEM NOMINAL <span id="clock">--:-- IST</span></div>
+      <label class="role-select-wrap" aria-label="Choose demo view"><span class="role-icon">JS</span><select id="role-select"><option value="admin">ICCC ADMIN</option><option value="crew">FIELD CREW</option></select></label>
+    </header>
+
+    <nav class="sidebar" aria-label="Primary navigation">
+      <div class="side-label">OPERATIONS</div>
+      <button class="nav-item active" data-view="command" aria-label="Command"><span class="nav-icon">⌖</span><small>Command</small></button>
+      <button class="nav-item" data-view="dispatch" aria-label="Dispatch"><span class="nav-icon">⇢</span><small>Dispatch</small></button>
+      <button class="nav-item" data-view="impact" aria-label="Impact"><span class="nav-icon">↗</span><small>Impact</small></button>
+      <div class="side-spacer"></div>
+      <div class="side-footer"><span class="avatar">JS</span><small>OPS<br>CENTRE</small></div>
+    </nav>
+
+    <main class="workspace">
+      <section class="workspace-head">
+        <div>
+          <div class="eyebrow"><span>MUNICIPAL ICCC</span><i>/</i><span id="view-kicker">COMMAND</span></div>
+          <h1 id="view-title">Water command centre</h1>
+          <p id="view-subtitle">Urban flood response · Managed recharge · Essential water delivery</p>
+        </div>
+        <div class="head-actions">
+          <button id="allocate-button" class="button button-secondary"><span>◉</span> Allocate recharge</button>
+          <button id="optimize-button" class="button button-primary"><span>⌁</span> Optimize tankers <kbd>↵</kbd></button>
+        </div>
+      </section>
+
+      <section class="dashboard-grid">
+        <div class="primary-column">
+          <section id="dispatch-panel" class="module-panel dispatch-panel" hidden>
+            <div class="module-heading"><div><span class="eyebrow">CAPACITY-AWARE ROUTING · 12 VEHICLES</span><h2>Tanker dispatch</h2></div><button id="solve-button" class="button button-ghost">⟳ Re-solve</button></div>
+            <div id="routes-list" class="routes-list"><span class="muted">Dispatch not solved yet</span><p>Run Optimize tankers to compute synthetic routes.</p></div>
+          </section>
+          <section id="impact-panel" class="module-panel impact-panel" hidden>
+            <div class="module-heading"><div><span class="eyebrow">SIMULATED · FORMULA-BASED ESTIMATES</span><h2>Scenario impact</h2></div></div>
+            <div id="impact-metrics" class="impact-metrics"></div>
+            <div class="formula-grid">
+              <article><b>Runoff volume</b><code>rain × area × 1,000,000 × composite runoff coefficient</code></article>
+              <article><b>Recharge captured</b><code>Σ min(site capacity, runoff share × priority weight)</code></article>
+              <article><b>Flood-hours avoided</b><code>risk wards × 0.7 h + captured-runoff share × 12 h</code></article>
+              <article><b>Travel / cost saved</b><code>heuristic route km × ₹14/km × 18% assumed saving</code></article>
+              <article><b>Delivery SLA</b><code>synthetic stops inside a simulated delivery window</code></article>
+              <article><b>Forecast method</b><code>Transparent formula — no trained model is claimed in this reconstruction.</code></article>
+            </div>
+          </section>
+
+          <section class="map-card" aria-label="Synthetic Faridabad micro-catchment map">
+            <div class="map-topline"><span class="live-tag"><i class="pulse-dot"></i> SYNTHETIC CITY MODEL · 20 MICRO-CATCHMENTS</span><label class="map-layer"><span>VIEW</span><select id="layer-select"><option value="flood_risk">Flood risk</option><option value="water_stress">Water stress</option><option value="recharge_potential">Recharge potential</option></select></label></div>
+            <div id="map" role="region" aria-label="Interactive simulated ward map"></div>
+            <div id="map-loading" class="map-loading" role="status" aria-live="polite">Loading public basemap…</div>
+            <div id="map-fallback" class="map-fallback" hidden></div>
+            <div class="map-legend"><b>FLOOD EXPOSURE</b><div class="legend-gradient"></div><div class="legend-scale"><span>LOW</span><span>WATCH</span><span>HIGH</span></div><div class="legend-items"><span><i class="legend-dot recharge"></i> Recharge site</span><span><i class="legend-dot outfall"></i> Drain outfall</span></div></div>
+            <div class="map-coords">28.41° N · 77.31° E</div>
+            <div class="map-attribution">MapLibre · © OpenMapTiles · © OpenStreetMap contributors</div>
+          </section>
+
+          <section class="bottom-metrics" aria-label="Simulated impact summary">
+            <article class="metric-card"><span class="metric-icon water">◉</span><div><small>MANAGED RECHARGE</small><strong id="metric-recharge">—</strong><em>CAPTURED · SIMULATED</em></div><span class="metric-trend">↗ CAPACITY</span></article>
+            <article class="metric-card"><span class="metric-icon shield">⬡</span><div><small>FLOOD HOURS AVOIDED</small><strong id="metric-hours">—</strong><em>ESTIMATED PROXY</em></div><span class="metric-trend">SIMULATED</span></article>
+            <article class="metric-card"><span class="metric-icon route">↗</span><div><small>TANKER KM SAVED</small><strong id="metric-km">—</strong><em>ASSUMED SAVING</em></div><span class="metric-trend">ROUTED</span></article>
+          </section>
+          <div class="demo-note"><span class="status-led"></span> DEMO DATA · SYNTHETIC WARDS, WEATHER &amp; OPERATIONS <span class="version">JAL-SETU · v0.2.0 · FARIDABAD, HR</span></div>
+        </div>
+
+        <aside class="control-rail">
+          <section class="scenario-card card">
+            <div class="card-head"><div><span class="eyebrow"><i class="pulse-dot"></i> RAIN WHAT-IF</span><h2>Storm scenario</h2></div><span class="forecast-badge">24H FORECAST</span></div>
+            <div class="rain-number"><strong id="rain-readout">95</strong><span>mm</span><span class="rain-delta">SIMULATED</span></div>
+            <div class="forecast-chart" aria-hidden="true"><svg viewBox="0 0 320 62" preserveAspectRatio="none"><path class="chart-grid" d="M0 15H320M0 31H320M0 47H320"/><path class="chart-line" d="M0 48 C24 47 30 40 52 42 S80 48 105 33 S142 29 160 34 S193 26 215 29 S250 15 269 22 S302 19 320 10"/><path class="chart-fill" d="M0 48 C24 47 30 40 52 42 S80 48 105 33 S142 29 160 34 S193 26 215 29 S250 15 269 22 S302 19 320 10V62H0Z"/></svg><div class="chart-labels"><span>00H</span><span>06H</span><span>12H</span><span>18H</span><span>24H</span></div></div>
+            <label class="range-label" for="rain-slider"><span>RAINFALL</span><span><b id="rain-label">95</b> mm</span></label>
+            <input id="rain-slider" type="range" min="0" max="200" step="1" value="95" aria-label="Rainfall in millimeters">
+            <div class="range-ticks"><span>0</span><span>100</span><span>200 mm</span></div>
+            <label class="duration-label" for="duration-select"><span>DURATION</span><select id="duration-select"><option value="1">1 hour</option><option value="3">3 hours</option><option value="6" selected>6 hours</option><option value="12">12 hours</option></select></label>
+            <button id="apply-scenario" class="button button-apply">Apply scenario <span>↗</span></button>
+          </section>
+
+          <section class="response-card card">
+            <div class="card-head compact"><div><span class="eyebrow">LIVE RESPONSE PICTURE</span></div><span class="tiny-badge">SYNTHETIC</span></div>
+            <div class="response-stat"><span class="metric-icon water">⌁</span><div><strong id="kpi-runoff">—</strong><small>RUNOFF L</small></div><span class="response-stat muted-stat"><b id="kpi-risk">—</b><small>AT-RISK WARDS</small></span></div>
+            <div class="response-substats"><span><b id="kpi-recharge">—</b><small>RECHARGE L</small></span><span><b id="kpi-tankers">—</b><small>ACTIVE TANKERS</small></span></div>
+          </section>
+
+          <section class="ward-watch card">
+            <div class="card-head compact"><div><span class="eyebrow">PRIORITY WARD WATCH</span></div><span class="live-label"><i class="pulse-dot"></i> LIVE</span></div>
+            <div id="ward-list" class="ward-list"><span class="muted">Loading synthetic wards…</span></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <aside class="copilot" aria-label="Jal-Setu Copilot">
+      <header class="copilot-head"><span class="copilot-icon">✦</span><div><strong>Jal-Setu Copilot</strong><small><i class="pulse-dot"></i> OPERATIONAL · RULE-BASED DEMO</small></div><button class="icon-button" id="copilot-info" title="About this Copilot">i</button></header>
+      <div class="copilot-context"><small>CONTEXT</small><span><i class="status-led"></i> Faridabad · <b id="context-rain">95</b> mm scenario</span></div>
+      <div id="chat-messages" class="chat-messages" aria-live="polite"><article class="chat-bubble"><small>JAL-SETU COPILOT <span>JUST NOW</span></small><p>Good evening. I’m monitoring <b>20 synthetic Faridabad wards</b>. Ask me to test a storm, prioritize recharge or adjust tanker dispatch.</p></article></div>
+      <div class="chat-bottom"><div class="suggestion-label">SUGGESTED PROMPTS</div><div class="suggestions"><button data-prompt="120 mm storm tonight — what’s the plan?">“120 mm storm tonight — what’s the plan?”</button><button data-prompt="Prioritize tanker deliveries">“Prioritize tanker deliveries”</button></div><form id="chat-form"><textarea id="chat-input" rows="2" placeholder="Ask about flood risk, recharge, dispatch…" aria-label="Ask the Jal-Setu Copilot"></textarea><button class="send-button" type="submit" aria-label="Send">➤</button></form><div class="copilot-disclaimer">PLANNING AID ONLY · CONFIRM FIELD CONDITIONS BEFORE DISPATCH</div></div>
+    </aside>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="allocation-modal" class="modal-backdrop" hidden><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button id="modal-close" class="icon-button modal-close" aria-label="Close">×</button><span class="eyebrow">SIMULATED ACTION</span><h2 id="modal-title">Allocate recharge capacity</h2><p>Assign synthetic recharge capacity to a priority site. This does not dispatch a real crew or change municipal infrastructure.</p><label>Site<select id="site-select"></select></label><label>Volume <span id="allocation-value">300,000 L</span><input id="allocation-slider" type="range" min="50000" max="600000" step="25000" value="300000"></label><button id="confirm-allocation" class="button button-primary">Allocate demo capacity</button></section></div>
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js" defer></script>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>
