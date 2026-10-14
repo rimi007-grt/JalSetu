@@ -6,6 +6,13 @@ A simulated Faridabad urban-water command-centre demo, reconstructed as a self-c
 
 All wards, boundaries, rainfall, demand, route outcomes and impact values are synthetic examples. The interface is a planning aid only—not a live municipal system, weather forecast, dispatch platform, official ward map, or production authentication service. The `demo-admin` and `demo-crew` bearer tokens are intentionally public demo-role selectors, not credentials. State for scenarios, allocations and route completions is in memory and may reset when the service restarts. The replacement does not claim parity with the original LightGBM/OR-Tools components; forecasts and routes use transparent formulas and deterministic heuristics.
 
+## Prerequisites and dependencies
+
+- Python 3.12 and `pip` (the production container uses Python 3.12).
+- Internet access for the public MapLibre GL JS CDN, OpenFreeMap map style/tiles, and Google Fonts. The API and the rest of the dashboard run locally without a database.
+- Runtime packages, pinned in `requirements.txt`: `fastapi==0.115.6` and `uvicorn[standard]==0.34.0`.
+- Test package, pinned in `requirements-test.txt`: `httpx==0.28.1` (the file also installs the runtime packages).
+
 ## Run locally
 
 ```sh
